@@ -1,0 +1,42 @@
+# Keil MDK
+*.o
+*.d
+*.crf
+*.htm
+*.dep
+*.map
+*.axf
+*.iex
+Objects/
+Listings/
+
+# Keil project local settings
+*.uvoptx
+*.uvguix.*
+*.scvd
+JLinkLog.txt
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# Windows
+Thumbs.db
+*.bak
+*.swp
+*.bk
+
+# Reference manuals and sample code
+references/
+# PDF cache (auto-generated)
+references/cache/
+
+# Local agent instructions and project docs
+AGENTS.md
+docs/
+
+# IDE
+.vscode/
+.idea/
