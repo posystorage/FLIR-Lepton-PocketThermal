@@ -7,7 +7,7 @@
 ## 中文
 
 > 这是一份偏硬件与产品展示的开源说明。软件/固件说明请见：[`../readme.md`](../readme.md)。  
-> 两份文档计划发布在不同平台，正式发布后建议把这里的相对链接替换为对应平台的公开链接。
+> 两份文档计划发布在不同平台，开源软件参考https://github.com/posystorage/FLIR-Lepton-PocketThermal。
 
 ### 项目简介
 

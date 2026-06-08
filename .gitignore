@@ -29,7 +29,6 @@ Thumbs.db
 *.bk
 
 # Reference manuals and sample code
-references/
 # PDF cache (auto-generated)
 references/cache/
 
