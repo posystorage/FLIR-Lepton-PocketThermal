@@ -10,15 +10,15 @@
 #define UI_PORTRAIT_H      432u
 #define UI_LUT_X             0u
 #define UI_LUT_Y             0u
-#define UI_LUT_W            24u
+#define UI_LUT_W            26u
 #define UI_LUT_H           240u
-#define UI_IMAGE_X          24u
+#define UI_IMAGE_X          26u
 #define UI_IMAGE_Y           0u
 #define UI_IMAGE_W         320u
 #define UI_IMAGE_H         240u
-#define UI_PANEL_X         344u
+#define UI_PANEL_X         346u
 #define UI_PANEL_Y           0u
-#define UI_PANEL_W          88u
+#define UI_PANEL_W          86u
 #define UI_PANEL_H         240u
 
 #define UI_COLOR_BG        0x0841u

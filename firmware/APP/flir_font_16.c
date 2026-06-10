@@ -65,13 +65,13 @@ static LV_ATTRIBUTE_LARGE_CONST const uint8_t gylph_bitmap[] = {
     0x10, 0x20, 0x47, 0xf1, 0x2, 0x4, 0x0, 
 
     /* U+2c "," */
-    0x0, 
+    0x80, 
 
     /* U+2d "-" */
     0x70, 
 
     /* U+2e "." */
-    0x0, 
+    0x80, 
 
     /* U+2f "/" */
     0x10, 0x22, 0x20, 0x44, 0x48, 0x80, 
@@ -535,7 +535,7 @@ static const lv_font_fmt_txt_glyph_dsc_t glyph_dsc[] = {
 /* U+2b "+" */  {.bitmap_index = 72, .adv_w = 136, .box_w = 7, .box_h = 7, .ofs_x = 1, .ofs_y = 2},
 /* U+2c "," */  {.bitmap_index = 79, .adv_w = 56, .box_w = 1, .box_h = 4, .ofs_x = 2, .ofs_y = -3},
 /* U+2d "-" */  {.bitmap_index = 80, .adv_w = 72, .box_w = 4, .box_h = 1, .ofs_x = 0, .ofs_y = 3},
-/* U+2e "." */  {.bitmap_index = 81, .adv_w = 56, .box_w = 1, .box_h = 1, .ofs_x = 2, .ofs_y = 0},
+/* U+2e "." */  {.bitmap_index = 81, .adv_w = 24, .box_w = 1, .box_h = 1, .ofs_x = 1, .ofs_y = 0},
 /* U+2f "/" */  {.bitmap_index = 82, .adv_w = 56, .box_w = 4, .box_h = 11, .ofs_x = 0, .ofs_y = 0},
 /* U+30 "0" */  {.bitmap_index = 88, .adv_w = 120, .box_w = 6, .box_h = 11, .ofs_x = 1, .ofs_y = 0},
 /* U+31 "1" */  {.bitmap_index = 97, .adv_w = 120, .box_w = 3, .box_h = 11, .ofs_x = 2, .ofs_y = 0},

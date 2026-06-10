@@ -406,9 +406,9 @@ void ui_draw_lut_body(void)
 			v = (uint8_t)(255u - ((uint32_t)i * 255u / (bar_h - 1u)));
 			ui_draw_fill_rect_lcd(bar_x, (uint16_t)(bar_y + i), bar_w, 1u, pal[v]);
 		}
-		ui_draw_text_middle((uint16_t)(lut->x + 12), (uint16_t)(lut->y + 0), "max",
+		ui_draw_text_middle((uint16_t)(lut->x + UI_LUT_W/2), (uint16_t)(lut->y + 0), "HI",
 		                    UI_COLOR_TEXT, UI_COLOR_BG);
-		ui_draw_text_middle((uint16_t)(lut->x + 12), (uint16_t)(lut->y + 208), "min",
+		ui_draw_text_middle((uint16_t)(lut->x + UI_LUT_W/2), (uint16_t)(lut->y + 208), "LO",
 		                    UI_COLOR_TEXT, UI_COLOR_BG);
 	}
 }
@@ -428,12 +428,12 @@ void ui_draw_lut_values(void)
 		                        points->point[TEMP_POINT_MIN].temp_c_x100);
 	}
 	if (g_draw_orient == 2u || g_draw_orient == 3u) {
-		ui_draw_fill_rect_xy((uint16_t)lut->x, (uint16_t)lut->y, 34u, 24u, UI_COLOR_BG);
-		ui_draw_fill_rect_xy((uint16_t)(lut->x + lut->w - 34), (uint16_t)lut->y,
+		ui_draw_fill_rect_xy((uint16_t)lut->x, (uint16_t)lut->y+3, 34u, 24u, UI_COLOR_BG);
+		ui_draw_fill_rect_xy((uint16_t)(lut->x + lut->w - 34), (uint16_t)lut->y+3,
 		                     34u, 24u, UI_COLOR_BG);
-		ui_draw_text_middle((uint16_t)(lut->x + 17), (uint16_t)lut->y, low,
+		ui_draw_text_middle((uint16_t)(lut->x + 17), (uint16_t)lut->y+3, low,
 		                    UI_COLOR_TEXT, UI_COLOR_BG);
-		ui_draw_text_middle((uint16_t)(lut->x + lut->w - 17), (uint16_t)lut->y, high,
+		ui_draw_text_middle((uint16_t)(lut->x + lut->w - 17), (uint16_t)lut->y+3, high,
 		                    UI_COLOR_TEXT, UI_COLOR_BG);
 	} else {
 		ui_draw_fill_rect_xy((uint16_t)lut->x, (uint16_t)(lut->y + 16u),
