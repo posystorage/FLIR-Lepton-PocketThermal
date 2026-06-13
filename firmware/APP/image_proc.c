@@ -80,6 +80,7 @@ uint8_t image_pipeline_run(const uint16_t raw14[60][80])
 		agc_build_map(raw14);
 		agc_render(raw14, g_display8);
 		temp_measure_points(raw14, &g_last_t_center, &g_last_t_max, &g_last_t_min);
+		UI_OnTemperatureFrame(temp_get_points());
 		g_pipeline_count++;
 		g_stats.frame_count = g_pipeline_count;
 		g_stats.center_c_x100 = g_last_t_center;
@@ -121,7 +122,6 @@ uint8_t image_pipeline_run(const uint16_t raw14[60][80])
 	sr = image_upscale_get_result();
 	g_has_gray320 = 1u;
 	UI_DrawThermalFrameRgb565(sr);
-	UI_RequestRedraw(UI_DIRTY_TEMP | UI_DIRTY_LUT_VALUES);
 	(void)UVC_BeginGrayFrame(sr);
 
 	g_pipeline_stage = IMAGE_PIPELINE_STAGE_IDLE;

@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include "ui_orientation.h"
 
 #define LVGL_VERSION_MAJOR 6
 #define LVGL_VERSION_MINOR 0
@@ -79,7 +80,7 @@ typedef struct _lv_font_struct {
 extern lv_font_t fdxb_font_16;
 
 void Show_MCU_Set_Color(uint16_t fg, uint16_t bg);
-void Show_MCU_Set_Orientation(uint8_t orient);
+void Show_MCU_Set_Orientation(ui_orientation_t orientation);
 uint32_t Show_Str_Get_Width(const char *txt, const lv_font_t *font);
 void Show_MCU_Str(uint16_t x, uint16_t y, const char *txt, const lv_font_t *font);
 void Show_MCU_Str_Middle(uint16_t x, uint16_t y, const char *txt, const lv_font_t *font);

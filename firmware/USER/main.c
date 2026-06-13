@@ -19,44 +19,7 @@
 #include "ff.h"
 #include "diskio.h"
 
-mpu6050_orientation_t cur_orient, last_orient = MPU6050_ORIENTATION_UNKNOWN;
-
 #define ENABLE_FATFS_TEST  0
-
-static void Screen_Rotate(mpu6050_orientation_t orient)
-{
-    uint8_t ui_orient;
-
-    HW_DEBUG("rotate: %d", orient);
-    if (orient == MPU6050_ORIENTATION_0) {
-        ui_orient = UI_ORIENT_LANDSCAPE_180;
-    } else if (orient == MPU6050_ORIENTATION_180) {
-        ui_orient = UI_ORIENT_LANDSCAPE_0;
-    } else if (orient == MPU6050_ORIENTATION_90) {
-        ui_orient = UI_ORIENT_PORTRAIT_90;
-    } else {
-        ui_orient = UI_ORIENT_PORTRAIT_270;
-    }
-    UI_OnOrientationChanged(ui_orient);
-}
-
-static void MPU6050_LCD_Rotate_Service(void)
-{
-    if (g_mpu_tick_flag)
-    {
-        g_mpu_tick_flag = 0;
-        MPU6050_Service();
-
-        cur_orient = MPU6050_GetOrientation();
-        if (cur_orient != last_orient
-            && cur_orient != MPU6050_ORIENTATION_UNKNOWN
-            && cur_orient != MPU6050_ORIENTATION_FLAT)
-        {
-            last_orient = cur_orient;
-            Screen_Rotate(cur_orient);
-        }
-    }
-}
 
 uint8_t test_run = 0;
 
@@ -154,7 +117,6 @@ int32_t main(void)
 #if ENABLE_FATFS_TEST
         FATFS_Test();
 #endif
-        MPU6050_LCD_Rotate_Service();
         USB_Composite_Service();
     }
 }

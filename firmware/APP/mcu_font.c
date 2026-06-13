@@ -3,7 +3,7 @@
 
 uint16_t Font_Color = 0xFFFFu;
 uint16_t Backdrop_Color = 0x0000u;
-static uint8_t g_font_orient = 1u;
+static ui_orientation_t g_font_orientation = UI_ORIENTATION_0;
 
 #define MCU_FONT_MAX_CHARS          48u
 
@@ -26,9 +26,9 @@ void Show_MCU_Set_Color(uint16_t fg, uint16_t bg)
 	Backdrop_Color = bg;
 }
 
-void Show_MCU_Set_Orientation(uint8_t orient)
+void Show_MCU_Set_Orientation(ui_orientation_t orientation)
 {
-	g_font_orient = orient;
+	g_font_orientation = orientation;
 }
 
 static uint16_t mcu_font_color_to_lcd(uint16_t rgb565)
@@ -194,7 +194,7 @@ uint16_t Show_MCU_Font_Fast(uint16_t x, uint16_t y, uint32_t unicode, const lv_f
 	glyph_x = gdsc->ofs_x;
 	glyph_y = (int16_t)font->line_height - (int16_t)font->base_line -
 	          (int16_t)gdsc->box_h - (int16_t)gdsc->ofs_y;
-	LCD_Begin_Glyph_Window(g_font_orient,
+	LCD_Begin_Glyph_Window(UI_OrientationToLcdCode(g_font_orientation),
 	                       (uint16_t)((int32_t)x + glyph_x),
 	                       (uint16_t)((int32_t)y + glyph_y),
 	                       gdsc->box_w, gdsc->box_h);

@@ -7,7 +7,8 @@
 ## 中文
 
 > 中文为原文，英文为机器翻译，仅供海外读者快速了解。  
-> 硬件开源说明见：[`hardware/hw.md`](hardware/hw.md)。两份文档计划发布在不同平台，正式发布后建议把这里的相对链接替换为对应平台的公开链接。
+> 硬件开源说明见：[`hardware/hw.md`](hardware/hw.md)。相关硬件讨论也可参考https://oshwhub.com/posy/project_xbiozslm。
+> 电路板文件以本仓库hw内的AD14工程为准。不要参考LCEDA!!!!!!画这个电路板的时候，LCEDA还相当不成熟呢。
 
 ### 项目简介
 

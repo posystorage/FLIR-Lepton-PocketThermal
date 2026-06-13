@@ -469,6 +469,36 @@
               <FileType>1</FileType>
               <FilePath>..\APP\flir_font_16.c</FilePath>
             </File>
+            <File>
+              <FileName>ui_body.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\APP\ui_body.c</FilePath>
+            </File>
+            <File>
+              <FileName>ui_layout.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\APP\ui_layout.c</FilePath>
+            </File>
+            <File>
+              <FileName>ui_marker.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\APP\ui_marker.c</FilePath>
+            </File>
+            <File>
+              <FileName>ui_orientation.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\APP\ui_orientation.c</FilePath>
+            </File>
+            <File>
+              <FileName>ui_status.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\APP\ui_status.c</FilePath>
+            </File>
+            <File>
+              <FileName>ui_thermal.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\APP\ui_thermal.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
