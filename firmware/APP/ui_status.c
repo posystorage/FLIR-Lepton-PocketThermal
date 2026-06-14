@@ -36,46 +36,76 @@ static uint8_t slot_index(uint8_t index, uint8_t count)
 	return index;
 }
 
+static uint16_t slot_center(int16_t base, uint16_t length, uint8_t slot, uint8_t count)
+{
+	uint16_t start;
+	uint16_t end;
+
+	start = (uint16_t)(((uint32_t)slot * length) / count);
+	end = (uint16_t)(((uint32_t)(slot + 1u) * length) / count);
+	return (uint16_t)(base + (int16_t)((start + end) / 2u));
+}
+
+static uint16_t slot_bitmap_origin(int16_t base, uint16_t length,
+                                   uint8_t slot, uint8_t count,
+                                   uint8_t bitmap_size)
+{
+	uint16_t center;
+	uint16_t half;
+
+	center = slot_center(base, length, slot, count);
+	half = (uint16_t)(bitmap_size / 2u);
+	return (center > half) ? (uint16_t)(center - half) : 0u;
+}
+
+static void draw_keybar_icon(const ui_rect_t *bar, uint8_t slot,
+                             const ui_bitmap_t *icon)
+{
+	uint16_t x;
+	uint16_t y;
+
+	x = slot_bitmap_origin(bar->x, (uint16_t)bar->w, slot, 5u, icon->w);
+	y = slot_bitmap_origin(bar->y, (uint16_t)bar->h, slot, 5u, icon->h);
+	if (bar->w > bar->h) {
+		y = slot_bitmap_origin(bar->y, (uint16_t)bar->h, 0u, 1u, icon->h);
+	} else {
+		x = slot_bitmap_origin(bar->x, (uint16_t)bar->w, 0u, 1u, icon->w);
+	}
+	ui_draw_bitmap_rot(x, y, icon, UI_COLOR_TEXT, UI_COLOR_PANEL);
+}
+
+static void draw_keybar_text(const ui_rect_t *bar, uint8_t slot, const char *text)
+{
+	uint16_t x;
+	uint16_t y;
+
+	x = slot_center(bar->x, (uint16_t)bar->w, slot, 5u);
+	y = slot_center(bar->y, (uint16_t)bar->h, slot, 5u);
+	if (bar->w > bar->h) {
+		y = slot_center(bar->y, (uint16_t)bar->h, 0u, 1u);
+	} else {
+		x = slot_center(bar->x, (uint16_t)bar->w, 0u, 1u);
+	}
+	ui_draw_text_middle(x, (uint16_t)(y - 8u), text,
+	                    UI_COLOR_TEXT, UI_COLOR_PANEL);
+}
+
 static void draw_keybar(void)
 {
 	const ui_layout_t *layout = UI_LayoutGet();
 	const ui_rect_t *bar = &layout->keybar;
-	uint8_t e_slot = slot_index(0u, 4u);
-	uint8_t t_slot = slot_index(1u, 4u);
-	uint8_t l_slot = slot_index(2u, 4u);
-	uint8_t cam_slot = slot_index(3u, 4u);
-	uint16_t step;
+	uint8_t power_slot = slot_index(0u, 5u);
+	uint8_t e_slot = slot_index(1u, 5u);
+	uint8_t temp_slot = slot_index(2u, 5u);
+	uint8_t l_slot = slot_index(3u, 5u);
+	uint8_t cam_slot = slot_index(4u, 5u);
 
 	ui_draw_fill_rect(*bar, UI_COLOR_PANEL);
-	if (layout->bars_vertical) {
-		step = (uint16_t)(bar->h / 4);
-		ui_draw_text((uint16_t)(bar->x + 2),
-		             (uint16_t)(bar->y + step * e_slot + 3),
-		             "E", UI_COLOR_TEXT, UI_COLOR_PANEL);
-		ui_draw_text((uint16_t)(bar->x + 2),
-		             (uint16_t)(bar->y + step * t_slot + 3),
-		             "T", UI_COLOR_TEXT, UI_COLOR_PANEL);
-		ui_draw_text((uint16_t)(bar->x + 2),
-		             (uint16_t)(bar->y + step * l_slot + 3),
-		             "L", UI_COLOR_TEXT, UI_COLOR_PANEL);
-		ui_draw_bitmap_rot((uint16_t)(bar->x + 6),
-		                   (uint16_t)(bar->y + step * cam_slot + 7),
-		                   &ui_icon_camera, UI_COLOR_TEXT, UI_COLOR_PANEL);
-	} else {
-		step = (uint16_t)(bar->w / 4);
-		ui_draw_text((uint16_t)(bar->x + step * e_slot + 4),
-		             (uint16_t)(bar->y + 2),
-		             "E", UI_COLOR_TEXT, UI_COLOR_PANEL);
-		ui_draw_text((uint16_t)(bar->x + step * t_slot + 4),
-		             (uint16_t)(bar->y + 2),
-		             "T", UI_COLOR_TEXT, UI_COLOR_PANEL);
-		ui_draw_text((uint16_t)(bar->x + step * l_slot + 4),
-		             (uint16_t)(bar->y + 2),
-		             "L", UI_COLOR_TEXT, UI_COLOR_PANEL);
-		ui_draw_bitmap_rot((uint16_t)(bar->x + step * cam_slot + 4),
-		                   (uint16_t)(bar->y + 2),
-		                   &ui_icon_camera, UI_COLOR_TEXT, UI_COLOR_PANEL);
-	}
+	draw_keybar_icon(bar, power_slot, &ui_icon_power);
+	draw_keybar_text(bar, e_slot, "E");
+	draw_keybar_icon(bar, temp_slot, &ui_icon_temp_point);
+	draw_keybar_text(bar, l_slot, "L");
+	draw_keybar_icon(bar, cam_slot, &ui_icon_camera);
 }
 
 static void draw_system_status(void)

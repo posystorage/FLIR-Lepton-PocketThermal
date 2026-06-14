@@ -14,13 +14,26 @@ static const uint16_t icon_usb_rows[16] = {
 	0x0180,0x03C0,0x0180,0x0180,0x0DB0,0x1188,0x2184,0x4182,
 	0x0180,0x0180,0x0180,0x0180,0x0180,0x03C0,0x0180,0x0000
 };
-static const uint16_t icon_camera_rows[8] = {0x3C,0x42,0x99,0xA5,0xA5,0x99,0x42,0x3C};
+static const uint16_t icon_power_rows[16] = {
+	0x0180,0x0180,0x0180,0x0180,0x1998,0x300C,0x6006,0x6006,
+	0x6006,0x6006,0x6006,0x300C,0x1818,0x0FF0,0x03C0,0x0000
+};
+static const uint16_t icon_temp_point_rows[16] = {
+	0x0180,0x0180,0x0180,0x0180,0x03C0,0x0420,0x0810,0xF81F,
+	0xF81F,0x0810,0x0420,0x03C0,0x0180,0x0180,0x0180,0x0180
+};
+static const uint16_t icon_camera_rows[16] = {
+	0x0000,0x0C00,0x1E00,0x7FFE,0x8001,0x9FF9,0xB00D,0xA665,
+	0xAC35,0xAC35,0xA665,0xB00D,0x9FF9,0x8001,0x7FFE,0x0000
+};
 static const uint16_t icon_cancel_rows[8] = {0x81,0x42,0x24,0x18,0x18,0x24,0x42,0x81};
 static const uint16_t icon_check_rows[8]  = {0x01,0x02,0x04,0x88,0x50,0x20,0x00,0x00};
 
 const ui_bitmap_t ui_icon_sd      = {16u, 16u, icon_sd_rows};
 const ui_bitmap_t ui_icon_usb     = {16u, 16u, icon_usb_rows};
-const ui_bitmap_t ui_icon_camera  = {8u, 8u, icon_camera_rows};
+const ui_bitmap_t ui_icon_power   = {16u, 16u, icon_power_rows};
+const ui_bitmap_t ui_icon_temp_point = {16u, 16u, icon_temp_point_rows};
+const ui_bitmap_t ui_icon_camera  = {16u, 16u, icon_camera_rows};
 const ui_bitmap_t ui_icon_cancel  = {8u, 8u, icon_cancel_rows};
 const ui_bitmap_t ui_icon_check   = {8u, 8u, icon_check_rows};
 
@@ -175,31 +188,20 @@ void ui_draw_bitmap_rot(uint16_t x, uint16_t y, const ui_bitmap_t *bmp, uint16_t
 {
 	uint8_t row;
 	uint8_t col;
-	uint16_t px;
-	uint16_t py;
+	uint16_t fg_lcd;
+	uint16_t bg_lcd;
 
 	if (bmp == NULL || bmp->rows == NULL) {
 		return;
 	}
-	ui_draw_fill_rect_xy(x, y, bmp->w, bmp->h, bg);
+	fg_lcd = ui_color_to_lcd(fg);
+	bg_lcd = ui_color_to_lcd(bg);
+	LCD_Begin_Glyph_Window(UI_OrientationToLcdCode(g_draw_orientation),
+	                       x, y, bmp->w, bmp->h);
 	for (row = 0u; row < bmp->h; row++) {
 		for (col = 0u; col < bmp->w; col++) {
-			if (!(bmp->rows[row] & (uint16_t)(1u << (bmp->w - 1u - col)))) {
-				continue;
-			}
-			/*
-			 * Portrait coordinates are rotated by LCD_Begin_UI_Window().
-			 * Reverse landscape keeps the same window coordinates, so rotate
-			 * the bitmap here to keep directional icons facing the user.
-			 */
-			if (g_draw_orientation == UI_ORIENTATION_180) {
-				px = (uint16_t)(x + bmp->w - 1u - col);
-				py = (uint16_t)(y + bmp->h - 1u - row);
-			} else {
-				px = (uint16_t)(x + col);
-				py = (uint16_t)(y + row);
-			}
-			ui_draw_pixel(px, py, fg);
+			LCD_Write_DAT16((bmp->rows[row] & (uint16_t)(1u << (bmp->w - 1u - col))) ?
+			                fg_lcd : bg_lcd);
 		}
 	}
 }
@@ -225,6 +227,9 @@ void ui_draw_battery_status(uint16_t x, uint16_t y, uint8_t pct, uint8_t chargin
 	} else if (g_draw_orientation == UI_ORIENTATION_270) {
 		base_center_x = (uint16_t)(UI_SCREEN_W - center_y);
 		base_center_y = (uint16_t)(UI_SCREEN_H - center_x);
+	} else if (g_draw_orientation == UI_ORIENTATION_180) {
+		base_center_x = center_x;
+		base_center_y = center_y;
 	} else {
 		base_center_x = center_x;
 		base_center_y = (uint16_t)(UI_SCREEN_H - center_y);

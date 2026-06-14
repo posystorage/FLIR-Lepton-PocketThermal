@@ -11,6 +11,8 @@ typedef struct {
 
 extern const ui_bitmap_t ui_icon_sd;
 extern const ui_bitmap_t ui_icon_usb;
+extern const ui_bitmap_t ui_icon_power;
+extern const ui_bitmap_t ui_icon_temp_point;
 extern const ui_bitmap_t ui_icon_camera;
 extern const ui_bitmap_t ui_icon_cancel;
 extern const ui_bitmap_t ui_icon_check;
