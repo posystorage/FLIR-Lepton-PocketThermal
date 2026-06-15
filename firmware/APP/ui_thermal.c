@@ -25,7 +25,11 @@ static void format_lut_temp(char *buf, uint32_t len, int16_t temp)
 		sign = '-';
 		value = -value;
 	}
-	(void)snprintf(buf, len, "%c%ld", sign, (long)(value / 100));
+	if (sign == '+' && value >= 10000) {
+		(void)snprintf(buf, len, "%ld", (long)(value / 100));
+	} else {
+		(void)snprintf(buf, len, "%c%ld", sign, (long)(value / 100));
+	}
 }
 
 void UI_ThermalDrawLutBody(void)

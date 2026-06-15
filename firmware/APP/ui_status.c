@@ -4,6 +4,16 @@
 #include "sdcard.h"
 #include "usb_composite.h"
 
+typedef struct {
+	uint16_t sd_color;
+	usb_ui_state_t usb_state;
+	uint8_t battery_fill;
+	uint8_t charging;
+} ui_status_snapshot_t;
+
+static ui_status_snapshot_t g_status_snapshot;
+static uint8_t g_status_snapshot_valid;
+
 static uint16_t sd_color(void)
 {
 	if (!SDCard_IsInserted()) {
@@ -23,6 +33,33 @@ static uint16_t usb_color(void)
 		return UI_COLOR_DIM;
 	}
 	return (state == USB_UI_MSC_OWNING_SD) ? UI_COLOR_WARN : UI_COLOR_TEXT;
+}
+
+static uint8_t battery_fill_bucket(void)
+{
+	uint8_t pct = Power_GetBatteryPercent();
+
+	if (pct > 100u) {
+		pct = 100u;
+	}
+	return (uint8_t)((uint16_t)pct * 14u / 100u);
+}
+
+static void capture_status(ui_status_snapshot_t *snapshot)
+{
+	snapshot->sd_color = sd_color();
+	snapshot->usb_state = USB_Composite_GetUIState();
+	snapshot->battery_fill = battery_fill_bucket();
+	snapshot->charging = Power_IsCharging();
+}
+
+static uint8_t snapshots_equal(const ui_status_snapshot_t *a,
+                               const ui_status_snapshot_t *b)
+{
+	return (a->sd_color == b->sd_color &&
+	        a->usb_state == b->usb_state &&
+	        a->battery_fill == b->battery_fill &&
+	        a->charging == b->charging) ? 1u : 0u;
 }
 
 static uint8_t slot_index(uint8_t index, uint8_t count)
@@ -108,7 +145,7 @@ static void draw_keybar(void)
 	draw_keybar_icon(bar, cam_slot, &ui_icon_camera);
 }
 
-static void draw_system_status(void)
+void UI_StatusDrawSystem(void)
 {
 	const ui_layout_t *layout = UI_LayoutGet();
 	const ui_rect_t *bar = &layout->status;
@@ -140,9 +177,11 @@ static void draw_system_status(void)
 		                       Power_GetBatteryPercent(), Power_IsCharging(),
 		                       UI_COLOR_TEXT, UI_COLOR_BG);
 	}
+	UI_StatusCapture();
+	UI_StatusDrawDividers();
 }
 
-static void draw_dividers(void)
+void UI_StatusDrawDividers(void)
 {
 	const ui_layout_t *layout = UI_LayoutGet();
 	ui_orientation_t orientation = UI_LayoutGetOrientation();
@@ -182,6 +221,25 @@ static void draw_dividers(void)
 void UI_StatusDrawStatic(void)
 {
 	draw_keybar();
-	draw_system_status();
-	draw_dividers();
+	UI_StatusDrawSystem();
+}
+
+void UI_StatusCapture(void)
+{
+	capture_status(&g_status_snapshot);
+	g_status_snapshot_valid = 1u;
+}
+
+uint8_t UI_StatusHasChanged(void)
+{
+	ui_status_snapshot_t current;
+
+	capture_status(&current);
+	if (!g_status_snapshot_valid ||
+	    !snapshots_equal(&current, &g_status_snapshot)) {
+		g_status_snapshot = current;
+		g_status_snapshot_valid = 1u;
+		return 1u;
+	}
+	return 0u;
 }

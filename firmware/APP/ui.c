@@ -20,7 +20,10 @@
 #define UI_DIRTY_EMISSIVITY     (1u << 5)
 #define UI_DIRTY_STORAGE        (1u << 6)
 #define UI_DIRTY_MENU           (1u << 7)
+#define UI_DIRTY_SYS_STATUS     (1u << 8)
 #define UI_DIRTY_ALL            0xFFFFFFFFu
+
+#define UI_STATUS_POLL_MS       250u
 
 #define UI_TEXT_INSERT_SD       "请插卡"
 #define UI_TEXT_SAVING          "保存中"
@@ -42,6 +45,7 @@ static uint8_t g_ffc_text_visible;
 static uint8_t g_power_key_pressed;
 static uint8_t g_power_key_long_seen;
 static uint32_t g_storage_text_until;
+static uint32_t g_next_status_poll_ms;
 
 static ui_key_t map_key(uint8_t key_id)
 {
@@ -155,11 +159,13 @@ void UI_Init(void)
 	g_power_key_pressed = 0u;
 	g_power_key_long_seen = 0u;
 	g_storage_text_until = 0u;
+	g_next_status_poll_ms = GetTick() + UI_STATUS_POLL_MS;
 	g_full_clear_pending = 0u;
 	clear_screen();
 	UI_ThermalDrawLutBody();
 	UI_ThermalDrawLutValues();
 	UI_StatusDrawStatic();
+	UI_StatusCapture();
 	UI_BodyDrawFull();
 	g_dirty = 0u;
 }
@@ -227,6 +233,19 @@ static void service_storage(void)
 	}
 }
 
+static void service_status(void)
+{
+	uint32_t now = GetTick();
+
+	if ((int32_t)(now - g_next_status_poll_ms) < 0) {
+		return;
+	}
+	g_next_status_poll_ms = now + UI_STATUS_POLL_MS;
+	if (UI_StatusHasChanged()) {
+		g_dirty |= UI_DIRTY_SYS_STATUS;
+	}
+}
+
 static void expand_full_redraw(void)
 {
 	if (g_dirty != UI_DIRTY_ALL) {
@@ -246,6 +265,7 @@ void UI_Service(void)
 	orientation_service();
 	service_temperature();
 	service_storage();
+	service_status();
 	expand_full_redraw();
 
 	if (g_full_clear_pending) {
@@ -267,8 +287,14 @@ void UI_Service(void)
 		g_dirty &= ~UI_DIRTY_STATIC_BARS;
 		return;
 	}
+	if (g_dirty & UI_DIRTY_SYS_STATUS) {
+		UI_StatusDrawSystem();
+		g_dirty &= ~UI_DIRTY_SYS_STATUS;
+		return;
+	}
 	if (g_dirty & UI_DIRTY_MENU) {
 		UI_MenuDraw();
+		UI_StatusDrawDividers();
 		g_dirty &= ~UI_DIRTY_MENU;
 		return;
 	}
@@ -279,6 +305,7 @@ void UI_Service(void)
 	}
 	if (g_dirty & UI_DIRTY_BODY_FULL) {
 		UI_BodyDrawFull();
+		UI_StatusDrawDividers();
 		g_dirty &= ~(UI_DIRTY_BODY_FULL | UI_DIRTY_TEMP_VALUES |
 		             UI_DIRTY_EMISSIVITY | UI_DIRTY_STORAGE);
 		return;
@@ -318,7 +345,7 @@ void UI_OnKeyEvent(const key_event_t *event)
 			g_power_key_long_seen = 1u;
 		} else if (event->event == KEY_EVENT_RELEASE) {
 			if (g_power_key_pressed && !g_power_key_long_seen &&
-			    !Storage_IsBusy()) {
+			    !Storage_IsBusy() && !UI_MenuIsActive()) {
 				Lepton_App_RequestManualFFC();
 			}
 			g_power_key_pressed = 0u;

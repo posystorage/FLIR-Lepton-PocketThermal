@@ -237,6 +237,7 @@ void UI_BodyDrawEmissivity(void)
 	const ui_rect_t *region = &UI_LayoutGet()->emissivity;
 	char text[16];
 	uint16_t emiss = temp_get_emissivity();
+	uint16_t y = (uint16_t)region->y;
 
 	ui_draw_fill_rect(*region, UI_COLOR_BG);
 	if (emiss >= 100u) {
@@ -244,9 +245,11 @@ void UI_BodyDrawEmissivity(void)
 	} else {
 		(void)snprintf(text, sizeof(text), "E=0.%02u", (unsigned)emiss);
 	}
+	if (!UI_OrientationIsPortrait(UI_LayoutGetOrientation()) && y > 0u) {
+		y--;
+	}
 	ui_draw_text_middle((uint16_t)(region->x + region->w / 2),
-	                    (uint16_t)region->y, text,
-	                    UI_COLOR_TEXT, UI_COLOR_BG);
+	                    y, text, UI_COLOR_TEXT, UI_COLOR_BG);
 }
 
 void UI_BodySetStorageText(const char *text, uint16_t color)
