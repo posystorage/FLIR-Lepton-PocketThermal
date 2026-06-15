@@ -13,6 +13,7 @@ typedef enum {
     KEY_EVENT_NONE,
     KEY_EVENT_PRESS,
     KEY_EVENT_LONG,
+    KEY_EVENT_REPEAT,
     KEY_EVENT_RELEASE,
 } key_event_type_t;
 

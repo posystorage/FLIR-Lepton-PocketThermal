@@ -9,7 +9,7 @@
 
 #define KEY_DEBOUNCE_MS    20   // 防抖时间 20ms
 #define KEY_LONG_MS       2000  // 长按阈值 2s
-#define KEY_REPEAT_MS     500   // 连发延迟 (预留)
+#define KEY_REPEAT_MS       80  // 方向键长按连发间隔
 
 /* 每键状态机 */
 typedef enum {
@@ -22,11 +22,17 @@ typedef enum {
 typedef struct {
     key_state_t state;
     uint32_t    tick_start;  // 状态进入时的时间戳
+    uint32_t    tick_repeat; // 连发时间戳
     uint8_t     long_fired;  // 长按事件是否已触发
 } key_machine_t;
 
 static key_machine_t km[KEY_COUNT] = {0};
 static uint8_t pin_read(uint8_t id);
+
+static uint8_t key_repeat_enabled(uint8_t id)
+{
+    return (id == KEY4_ID || id == KEY5_ID) ? 1u : 0u;
+}
 
 /* ── 事件环形缓冲区 ── */
 #define KEY_EVENT_BUF 16
@@ -97,6 +103,7 @@ void Key_Scan(void)
                     // 防抖确认按下
                     m->state = KS_PRESSED;
                     m->tick_start = now;
+                    m->tick_repeat = now;
                     m->long_fired = 0;
                     ev_push(id, KEY_EVENT_PRESS);
                 }
@@ -110,7 +117,12 @@ void Key_Scan(void)
                 // 仍按住 — 检查长按
                 if (!m->long_fired && (now - m->tick_start >= KEY_LONG_MS)) {
                     m->long_fired = 1;
+                    m->tick_repeat = now;
                     ev_push(id, KEY_EVENT_LONG);
+                } else if (m->long_fired && key_repeat_enabled(id) &&
+                           (now - m->tick_repeat >= KEY_REPEAT_MS)) {
+                    m->tick_repeat = now;
+                    ev_push(id, KEY_EVENT_REPEAT);
                 }
             } else {
                 // 释放

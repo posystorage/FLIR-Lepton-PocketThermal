@@ -14,6 +14,8 @@ typedef enum {
 	UI_POINT_EDIT_Y,
 } ui_point_edit_step_t;
 
+#define UI_POINT_MOVE_FAST_STEP 5
+
 static const uint16_t g_emiss_values[] = {
 	100u, 98u, 95u, 93u, 90u, 85u, 80u, 75u, 70u, 60u, 50u
 };
@@ -131,7 +133,8 @@ static void adjust_point(int8_t delta, uint8_t fast)
 {
 	uint8_t x;
 	uint8_t y;
-	uint8_t step = fast ? 5u : 1u;
+	int8_t step = fast ? UI_POINT_MOVE_FAST_STEP : 1;
+	int8_t move = (int8_t)(delta * step);
 
 	if (g_edit_step == UI_POINT_EDIT_ENABLE) {
 		temp_set_point_enabled(g_edit_point,
@@ -148,12 +151,22 @@ static void adjust_point(int8_t delta, uint8_t fast)
 	} else {
 		temp_get_user_point(g_edit_point, &x, &y);
 		if (g_edit_step == UI_POINT_EDIT_X) {
-			x = wrap_coordinate(x, 79u, (int8_t)(delta * (int8_t)step));
+			x = wrap_coordinate(x, 79u, move);
 		} else {
-			y = wrap_coordinate(y, 59u, (int8_t)(delta * (int8_t)step));
+			y = wrap_coordinate(y, 59u, move);
 		}
 		temp_set_user_point(g_edit_point, x, y);
 	}
+}
+
+static int16_t user_x_to_screen(uint8_t x)
+{
+	return (int16_t)(((int16_t)x - 40) * 4);
+}
+
+static int16_t user_y_to_screen(uint8_t y)
+{
+	return (int16_t)((30 - (int16_t)y) * 4);
 }
 
 uint8_t UI_MenuHandleKey(ui_key_t key, key_event_type_t event)
@@ -172,9 +185,16 @@ uint8_t UI_MenuHandleKey(ui_key_t key, key_event_type_t event)
 	}
 	if (g_page == UI_MENU_POINT_EDIT) {
 		if ((key == UI_KEY_PREVIOUS || key == UI_KEY_NEXT) &&
-		    (event == KEY_EVENT_PRESS || event == KEY_EVENT_LONG)) {
+		    (event == KEY_EVENT_PRESS || event == KEY_EVENT_LONG ||
+		     event == KEY_EVENT_REPEAT)) {
+			if (event == KEY_EVENT_REPEAT &&
+			    g_edit_step != UI_POINT_EDIT_X &&
+			    g_edit_step != UI_POINT_EDIT_Y) {
+				return result;
+			}
 			adjust_point((key == UI_KEY_NEXT) ? 1 : -1,
-			             (event == KEY_EVENT_LONG) ? 1u : 0u);
+			             (event == KEY_EVENT_LONG ||
+			              event == KEY_EVENT_REPEAT) ? 1u : 0u);
 			result |= UI_MENU_RESULT_TEMP;
 			if (g_edit_step == UI_POINT_EDIT_COLOR) {
 				result |= UI_MENU_RESULT_COLOR;
@@ -223,6 +243,14 @@ static const char *temp_name(temp_point_id_t id)
 	return names[id];
 }
 
+static const char *temp_menu_name(temp_point_id_t id)
+{
+	if (id == TEMP_POINT_CENTER) {
+		return "CTR";
+	}
+	return temp_name(id);
+}
+
 static void draw_item(uint8_t item, const char *text, uint16_t color)
 {
 	const ui_rect_t *body = &UI_LayoutGet()->body;
@@ -249,6 +277,71 @@ static void draw_item(uint8_t item, const char *text, uint16_t color)
 	}
 	ui_draw_fill_rect_xy(x, y, width, UI_TEMP_LINE_SPACING, UI_COLOR_BG);
 	ui_draw_text((uint16_t)(x + 2u), y, text, color, UI_COLOR_BG);
+}
+
+static void point_edit_item_rect(uint8_t item, uint16_t *x, uint16_t *y,
+                                 uint16_t *width, uint16_t *height)
+{
+	const ui_rect_t *body = &UI_LayoutGet()->body;
+	uint16_t row;
+
+	if (UI_OrientationIsPortrait(UI_LayoutGetOrientation())) {
+		*x = (uint16_t)body->x;
+		*width = (uint16_t)body->w;
+	} else {
+		*x = (uint16_t)body->x;
+		*width = (uint16_t)body->w;
+	}
+	row = item;
+	if (item > UI_POINT_EDIT_COLOR) {
+		row++;
+	}
+	*y = (uint16_t)(body->y + row * UI_TEMP_LINE_SPACING);
+	*height = (item == UI_POINT_EDIT_COLOR) ?
+	          (uint16_t)(UI_TEMP_LINE_SPACING * 2u) :
+	          (uint16_t)UI_TEMP_LINE_SPACING;
+}
+
+static void draw_point_edit_item(uint8_t item)
+{
+	char text[28];
+	uint16_t color = (item == g_index) ? UI_COLOR_WARN : UI_COLOR_TEXT;
+	uint16_t x;
+	uint16_t y;
+	uint16_t width;
+	uint16_t height;
+
+	point_edit_item_rect(item, &x, &y, &width, &height);
+	ui_draw_fill_rect_xy(x, y, width, height, UI_COLOR_BG);
+	if (item == UI_POINT_EDIT_ENABLE) {
+		(void)snprintf(text, sizeof(text), "%c%s",
+		               (item == g_index) ? '>' : ' ',
+		               temp_get_point_enabled(g_edit_point) ? "ON" : "OFF");
+		ui_draw_text((uint16_t)(x + 2u), y, text, color, UI_COLOR_BG);
+	} else if (item == UI_POINT_EDIT_COLOR) {
+		uint8_t color_index = UI_MarkerGetColorIndex(g_edit_point);
+		(void)snprintf(text, sizeof(text), "%cCOLOR",
+		               (item == g_index) ? '>' : ' ');
+		ui_draw_text((uint16_t)(x + 2u), y, text, color, UI_COLOR_BG);
+		(void)snprintf(text, sizeof(text), " %s",
+		               UI_MarkerColorName(color_index));
+		ui_draw_text((uint16_t)(x + 2u),
+		             (uint16_t)(y + UI_TEMP_LINE_SPACING), text,
+		             UI_MarkerColorValue(color_index), UI_COLOR_BG);
+	} else {
+		uint8_t raw_x = 0u;
+		uint8_t raw_y = 0u;
+		int16_t screen_value;
+
+		temp_get_user_point(g_edit_point, &raw_x, &raw_y);
+		screen_value = (item == UI_POINT_EDIT_X) ?
+		               user_x_to_screen(raw_x) : user_y_to_screen(raw_y);
+		(void)snprintf(text, sizeof(text), "%c%c %d",
+		               (item == g_index) ? '>' : ' ',
+		               (item == UI_POINT_EDIT_X) ? 'X' : 'Y',
+		               (int)screen_value);
+		ui_draw_text((uint16_t)(x + 2u), y, text, color, UI_COLOR_BG);
+	}
 }
 
 void UI_MenuDraw(void)
@@ -281,29 +374,11 @@ void UI_MenuDraw(void)
 		} else if (g_page == UI_MENU_TEMPERATURE) {
 			temp_point_id_t id = g_temp_ids[i];
 			(void)snprintf(text, sizeof(text), "%c%s %s",
-			               (i == g_index) ? '>' : ' ', temp_name(id),
+			               (i == g_index) ? '>' : ' ', temp_menu_name(id),
 			               temp_get_point_enabled(id) ? "ON" : "OFF");
 		} else {
-			uint8_t x = 0u;
-			uint8_t y = 0u;
-			temp_get_user_point(g_edit_point, &x, &y);
-			if (i == UI_POINT_EDIT_ENABLE) {
-				(void)snprintf(text, sizeof(text), "%c%s",
-				               (i == g_index) ? '>' : ' ',
-				               temp_get_point_enabled(g_edit_point) ? "ON" : "OFF");
-			} else if (i == UI_POINT_EDIT_COLOR) {
-				uint8_t color_index = UI_MarkerGetColorIndex(g_edit_point);
-				(void)snprintf(text, sizeof(text), "%cCOLOR %s",
-				               (i == g_index) ? '>' : ' ',
-				               UI_MarkerColorName(color_index));
-				color = UI_MarkerColorValue(color_index);
-			} else if (i == UI_POINT_EDIT_X) {
-				(void)snprintf(text, sizeof(text), "%cX %u",
-				               (i == g_index) ? '>' : ' ', (unsigned)x);
-			} else {
-				(void)snprintf(text, sizeof(text), "%cY %u",
-				               (i == g_index) ? '>' : ' ', (unsigned)y);
-			}
+			draw_point_edit_item(i);
+			continue;
 		}
 		draw_item(i, text, color);
 	}

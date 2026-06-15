@@ -13,8 +13,8 @@ static temp_points_t g_points = {
 		{1u, 40u, 30u, INT16_MIN},
 		{1u, 0u, 0u, INT16_MIN},
 		{1u, 0u, 0u, INT16_MIN},
-		{0u, 40u, 30u, INT16_MIN},
-		{0u, 40u, 30u, INT16_MIN},
+		{0u, 30u, 30u, INT16_MIN},
+		{0u, 50u, 30u, INT16_MIN},
 	}
 };
 
