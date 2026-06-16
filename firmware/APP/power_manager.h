@@ -21,6 +21,8 @@ void Power_Init(void);
 void Power_Service(void);
 void Power_ResetIdleTimer(void);
 void Power_Shutdown(void);
+void Power_SetAutoOffMinutes(uint16_t minutes);
+uint16_t Power_GetAutoOffMinutes(void);
 
 power_state_t Power_GetState(void);
 uint8_t Power_GetBatteryPercent(void);

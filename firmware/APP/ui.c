@@ -8,6 +8,7 @@
 #include "storage.h"
 #include "lepton_app.h"
 #include "temp_measure.h"
+#include "config_store.h"
 #include "sys_tick.h"
 #include "mpu6050.h"
 #include "debug.h"
@@ -44,6 +45,8 @@ static uint8_t g_storage_was_busy;
 static uint8_t g_ffc_text_visible;
 static uint8_t g_power_key_pressed;
 static uint8_t g_power_key_long_seen;
+static uint8_t g_lut_key_pressed;
+static uint8_t g_lut_key_long_seen;
 static uint32_t g_storage_text_until;
 static uint32_t g_next_status_poll_ms;
 
@@ -158,6 +161,8 @@ void UI_Init(void)
 	g_ffc_text_visible = 0u;
 	g_power_key_pressed = 0u;
 	g_power_key_long_seen = 0u;
+	g_lut_key_pressed = 0u;
+	g_lut_key_long_seen = 0u;
 	g_storage_text_until = 0u;
 	g_next_status_poll_ms = GetTick() + UI_STATUS_POLL_MS;
 	g_full_clear_pending = 0u;
@@ -363,11 +368,19 @@ void UI_OnKeyEvent(const key_event_t *event)
 	if (UI_MenuIsActive()) {
 		uint8_t result = UI_MenuHandleKey(key, event->event);
 		g_dirty |= UI_DIRTY_MENU;
+		if (result & (UI_MENU_RESULT_EMISS | UI_MENU_RESULT_LUT |
+		              UI_MENU_RESULT_TEMP | UI_MENU_RESULT_COLOR |
+		              UI_MENU_RESULT_POWER)) {
+			ConfigStore_RequestSave();
+		}
 		if (result & UI_MENU_RESULT_LUT) {
 			g_dirty |= UI_DIRTY_LUT_BODY | UI_DIRTY_LUT_VALUES;
 		}
 		if (result & UI_MENU_RESULT_EMISS) {
 			g_dirty |= UI_DIRTY_EMISSIVITY;
+		}
+		if (result & UI_MENU_RESULT_POWER) {
+			g_dirty |= UI_DIRTY_BODY_FULL;
 		}
 		if (result & (UI_MENU_RESULT_TEMP | UI_MENU_RESULT_COLOR)) {
 			g_dirty |= UI_DIRTY_BODY_FULL;
@@ -379,6 +392,24 @@ void UI_OnKeyEvent(const key_event_t *event)
 		return;
 	}
 	if (event->event != KEY_EVENT_PRESS) {
+		if (key == UI_KEY_CANCEL) {
+			if (event->event == KEY_EVENT_LONG) {
+				if (g_lut_key_pressed) {
+					g_lut_key_long_seen = 1u;
+					UI_MenuOpen(UI_MENU_AUTO_OFF);
+					g_dirty |= UI_DIRTY_MENU;
+					g_lut_key_pressed = 0u;
+					g_lut_key_long_seen = 0u;
+				}
+			} else if (event->event == KEY_EVENT_RELEASE) {
+				if (g_lut_key_pressed && !g_lut_key_long_seen) {
+					UI_MenuOpen(UI_MENU_LUT);
+					g_dirty |= UI_DIRTY_MENU;
+				}
+				g_lut_key_pressed = 0u;
+				g_lut_key_long_seen = 0u;
+			}
+		}
 		return;
 	}
 	if (key == UI_KEY_PREVIOUS) {
@@ -388,8 +419,8 @@ void UI_OnKeyEvent(const key_event_t *event)
 		UI_MenuOpen(UI_MENU_TEMPERATURE);
 		g_dirty |= UI_DIRTY_MENU;
 	} else if (key == UI_KEY_CANCEL) {
-		UI_MenuOpen(UI_MENU_LUT);
-		g_dirty |= UI_DIRTY_MENU;
+		g_lut_key_pressed = 1u;
+		g_lut_key_long_seen = 0u;
 	} else if (key == UI_KEY_CONFIRM) {
 		start_storage();
 	}

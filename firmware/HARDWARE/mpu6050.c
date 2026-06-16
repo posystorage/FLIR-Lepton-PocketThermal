@@ -5,6 +5,7 @@
 
 /* I2C interface */
 #define MPU6050_I2C I2C1
+#define MPU6050_I2C_OWNER 1u
 
 /* Accel ±2g → 16384 LSB/g */
 #define ACCEL_SCALE  16384L
@@ -200,13 +201,16 @@ void MPU6050_Service(void)
     int32_t tmp;
 
     if(!g_mpu_ready) return;
+    if(!IIC1_TryLock(MPU6050_I2C_OWNER)) return;
 
     /* Step 1: burst read 14 bytes (accel x3 + temp + gyro x3) */
     if(!mpu_read_burst(MPU6050_ACCEL_XOUT_H, buf, 14))
 		{
+			IIC1_Unlock(MPU6050_I2C_OWNER);
 			MPU_DEBUG("Burst_Read_Fail");			
 			return;
 		}
+    IIC1_Unlock(MPU6050_I2C_OWNER);
         
 
     ax_raw = (int16_t)((buf[0]  << 8) | buf[1]);

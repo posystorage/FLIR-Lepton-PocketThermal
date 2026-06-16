@@ -1,4 +1,5 @@
 #include "lepton_app.h"
+#include "config_store.h"
 #include "lepton.h"
 #include "image_proc.h"
 #include "temp_measure.h"
@@ -60,6 +61,7 @@ static uint8_t Lepton_App_TryInit(void)
 
     rbfo = Lepton_GetRBFO(&rbfo_valid);
     temp_init(rbfo, rbfo_valid);
+    ConfigStore_Apply();
 
     g_lepton_app_inited = 1;
     IMG_DEBUG("lepton app init ok");

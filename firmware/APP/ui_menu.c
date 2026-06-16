@@ -5,6 +5,7 @@
 #include "color_palette.h"
 #include "usb_uvc.h"
 #include "agc.h"
+#include "power_manager.h"
 #include <stdio.h>
 
 typedef enum {
@@ -14,10 +15,16 @@ typedef enum {
 	UI_POINT_EDIT_Y,
 } ui_point_edit_step_t;
 
-#define UI_POINT_MOVE_FAST_STEP 5
+#define UI_POINT_MOVE_FAST_STEP 3
+#define UI_MENU_PORTRAIT_ROWS  5u
+#define UI_MENU_PORTRAIT_COLS  2u
 
 static const uint16_t g_emiss_values[] = {
 	100u, 98u, 95u, 93u, 90u, 85u, 80u, 75u, 70u, 60u, 50u
+};
+
+static const uint16_t g_auto_off_values[] = {
+	0u, 3u, 5u, 10u, 20u, 30u, 60u
 };
 
 static const temp_point_id_t g_temp_ids[TEMP_POINT_COUNT] = {
@@ -58,6 +65,32 @@ uint8_t UI_MenuFindEmiss(uint16_t emiss_x100)
 	return 2u;
 }
 
+static uint8_t auto_off_count(void)
+{
+	return (uint8_t)(sizeof(g_auto_off_values) /
+	                 sizeof(g_auto_off_values[0]));
+}
+
+uint16_t UI_MenuAutoOffAt(uint8_t index)
+{
+	if (index >= auto_off_count()) {
+		index = UI_MenuFindAutoOff(5u);
+	}
+	return g_auto_off_values[index];
+}
+
+uint8_t UI_MenuFindAutoOff(uint16_t minutes)
+{
+	uint8_t i;
+
+	for (i = 0u; i < auto_off_count(); i++) {
+		if (g_auto_off_values[i] == minutes) {
+			return i;
+		}
+	}
+	return 2u;
+}
+
 void UI_MenuInit(void)
 {
 	g_page = UI_MENU_NONE;
@@ -73,6 +106,8 @@ void UI_MenuOpen(ui_menu_page_t page)
 		g_index = UI_MenuFindEmiss(temp_get_emissivity());
 	} else if (page == UI_MENU_LUT) {
 		g_index = (uint8_t)palette_get_current_id();
+	} else if (page == UI_MENU_AUTO_OFF) {
+		g_index = UI_MenuFindAutoOff(Power_GetAutoOffMinutes());
 	} else {
 		g_index = 0u;
 	}
@@ -90,6 +125,9 @@ static uint8_t page_count(void)
 	}
 	if (g_page == UI_MENU_LUT) {
 		return (uint8_t)PALETTE_ID_COUNT;
+	}
+	if (g_page == UI_MENU_AUTO_OFF) {
+		return auto_off_count();
 	}
 	if (g_page == UI_MENU_TEMPERATURE) {
 		return (uint8_t)TEMP_POINT_COUNT;
@@ -173,7 +211,8 @@ uint8_t UI_MenuHandleKey(ui_key_t key, key_event_type_t event)
 {
 	uint8_t result = UI_MENU_RESULT_NONE;
 
-	if (key == UI_KEY_CANCEL && event == KEY_EVENT_PRESS) {
+	if (key == UI_KEY_CANCEL &&
+	    (event == KEY_EVENT_PRESS || event == KEY_EVENT_LONG)) {
 		if (g_page == UI_MENU_POINT_EDIT) {
 			g_page = UI_MENU_TEMPERATURE;
 			g_index = (uint8_t)g_edit_point;
@@ -219,6 +258,10 @@ uint8_t UI_MenuHandleKey(ui_key_t key, key_event_type_t event)
 			temp_set_emissivity(UI_MenuEmissAt(g_index));
 			g_page = UI_MENU_NONE;
 			result |= UI_MENU_RESULT_CLOSED | UI_MENU_RESULT_EMISS;
+		} else if (g_page == UI_MENU_AUTO_OFF) {
+			Power_SetAutoOffMinutes(UI_MenuAutoOffAt(g_index));
+			g_page = UI_MENU_NONE;
+			result |= UI_MENU_RESULT_CLOSED | UI_MENU_RESULT_POWER;
 		} else if (g_page == UI_MENU_LUT) {
 			UVC_AbortFrame();
 			agc_init();
@@ -260,15 +303,22 @@ static void draw_item(uint8_t item, const char *text, uint16_t color)
 
 	if (UI_OrientationIsPortrait(UI_LayoutGetOrientation())) {
 		uint16_t column_w = (uint16_t)(body->w / 2);
-		uint8_t page_start = (uint8_t)((g_index / 6u) * 6u);
+		uint8_t page_capacity =
+			(uint8_t)(UI_MENU_PORTRAIT_ROWS * UI_MENU_PORTRAIT_COLS);
+		uint8_t page_start = (uint8_t)((g_index / page_capacity) *
+		                               page_capacity);
 		uint8_t local;
 
-		if (item < page_start || item >= (uint8_t)(page_start + 6u)) {
+		if (item < page_start ||
+		    item >= (uint8_t)(page_start + page_capacity)) {
 			return;
 		}
 		local = (uint8_t)(item - page_start);
-		x = (uint16_t)(body->x + (local % 2u) * column_w);
-		y = (uint16_t)(body->y + (local / 2u) * UI_TEMP_LINE_SPACING);
+		x = (uint16_t)(body->x +
+		               (local / UI_MENU_PORTRAIT_ROWS) * column_w);
+		y = (uint16_t)(body->y +
+		               (local % UI_MENU_PORTRAIT_ROWS) *
+		               UI_TEMP_LINE_SPACING);
 		width = column_w;
 	} else {
 		x = (uint16_t)body->x;
@@ -365,6 +415,18 @@ void UI_MenuDraw(void)
 				(void)snprintf(text, sizeof(text), "%c 0.%02u%c",
 				               (i == g_index) ? '>' : ' ', (unsigned)value,
 				               (value == temp_get_emissivity()) ? '*' : ' ');
+			}
+		} else if (g_page == UI_MENU_AUTO_OFF) {
+			uint16_t value = UI_MenuAutoOffAt(i);
+			if (value == 0u) {
+				(void)snprintf(text, sizeof(text), "%c NEVER%c",
+				               (i == g_index) ? '>' : ' ',
+				               (value == Power_GetAutoOffMinutes()) ? '*' : ' ');
+			} else {
+				(void)snprintf(text, sizeof(text), "%c %umin%c",
+				               (i == g_index) ? '>' : ' ',
+				               (unsigned)value,
+				               (value == Power_GetAutoOffMinutes()) ? '*' : ' ');
 			}
 		} else if (g_page == UI_MENU_LUT) {
 			(void)snprintf(text, sizeof(text), "%c%.10s%c",

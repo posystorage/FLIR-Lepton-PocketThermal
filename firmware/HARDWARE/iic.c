@@ -2,6 +2,32 @@
 #include "lepton.h"
 #include "debug.h"
 
+static volatile uint8_t g_iic1_owner = 0u;
+
+uint8_t IIC1_TryLock(uint8_t owner)
+{
+	if (owner == 0u) {
+		return 0u;
+	}
+	if (g_iic1_owner != 0u && g_iic1_owner != owner) {
+		return 0u;
+	}
+	g_iic1_owner = owner;
+	return 1u;
+}
+
+void IIC1_Unlock(uint8_t owner)
+{
+	if (g_iic1_owner == owner) {
+		g_iic1_owner = 0u;
+	}
+}
+
+uint8_t IIC1_IsLocked(void)
+{
+	return (g_iic1_owner != 0u) ? 1u : 0u;
+}
+
 void IIC_DELAY(void)//100k
 {
 	uint32_t i;

@@ -11,12 +11,14 @@
 #include "debug.h"
 
 /* ── 参数配置 ── */
-#define AUTO_OFF_MS        300000UL  // 5 分钟无操作自动关机
-#define WARN_MS               10000  // 关机前 10 秒警告
-#define BATTERY_LOW_PERCENT      10  // 低电量阈值
-#define BATTERY_CRIT_PERCENT      5  // 极低电量阈值
+#define BATTERY_LOW_PERCENT      10u
+#define BATTERY_CRIT_PERCENT      5u
 
 /* ── ADC 测量状态 ── */
+#define AUTO_OFF_DEFAULT_MIN     5u
+#define AUTO_OFF_NEVER_MIN       0u
+#define POWER_WARN_MS         10000u
+
 typedef enum {
     ADC_IDLE,
     ADC_STABILIZE,
@@ -28,6 +30,9 @@ static power_state_t g_state = POWER_ON;
 static uint32_t g_idle_tick = 0;
 static uint8_t  g_battery_pct = 50;
 static uint8_t  g_charging = 0;
+static uint16_t g_auto_off_minutes = AUTO_OFF_DEFAULT_MIN;
+static uint8_t  g_warn_from_auto_off = 0;
+static uint32_t g_warn_start_tick = 0;
 
 /* ── ADC 相关 ── */
 static adc_state_t g_adc_state = ADC_IDLE;
@@ -93,7 +98,24 @@ void Power_ResetIdleTimer(void)
     g_idle_tick = GetTick();
     if (g_state == POWER_AUTO_OFF_WARN) {
         g_state = POWER_ON;
+        g_warn_from_auto_off = 0u;
     }
+}
+
+void Power_SetAutoOffMinutes(uint16_t minutes)
+{
+    if (minutes != 0u && minutes != 3u && minutes != 5u &&
+        minutes != 10u && minutes != 20u && minutes != 30u &&
+        minutes != 60u) {
+        minutes = AUTO_OFF_DEFAULT_MIN;
+    }
+    g_auto_off_minutes = minutes;
+    Power_ResetIdleTimer();
+}
+
+uint16_t Power_GetAutoOffMinutes(void)
+{
+    return g_auto_off_minutes;
 }
 
 /* ── 关机序列 ── */
@@ -250,6 +272,7 @@ void Power_Service(void)
     case POWER_ON:
     {
         uint32_t elapsed = GetTick() - g_idle_tick;
+        uint32_t auto_off_ms = (uint32_t)g_auto_off_minutes * 60000u;
 //        if (g_battery_pct < BATTERY_CRIT_PERCENT) {
 //            Power_Shutdown();
 //            break;
@@ -258,12 +281,17 @@ void Power_Service(void)
 				{
 					Power_ResetIdleTimer();//如果在充电，则不会自动关闭
 				}
-        if (elapsed >= AUTO_OFF_MS - WARN_MS * 2) {
+        if (g_auto_off_minutes != AUTO_OFF_NEVER_MIN &&
+            elapsed >= auto_off_ms - POWER_WARN_MS * 2u) {
             g_state = POWER_AUTO_OFF_WARN;
+            g_warn_from_auto_off = 1u;
+            g_warn_start_tick = GetTick();
 						PM_DEBUG("Auto Off");
         }
         if (g_battery_mv < BATTERY_LOW_MV && g_battery_mv > 0) {
             g_state = POWER_AUTO_OFF_WARN;
+            g_warn_from_auto_off = 0u;
+            g_warn_start_tick = GetTick();
 						PM_DEBUG("Low Power");
         }
         break;
@@ -272,7 +300,16 @@ void Power_Service(void)
     case POWER_AUTO_OFF_WARN:
     {
         uint32_t elapsed = GetTick() - g_idle_tick;
-        if (elapsed >= AUTO_OFF_MS) {
+        uint32_t auto_off_ms = (uint32_t)g_auto_off_minutes * 60000u;
+        if (g_warn_from_auto_off && g_auto_off_minutes == AUTO_OFF_NEVER_MIN) {
+            g_state = POWER_ON;
+            g_warn_from_auto_off = 0u;
+        } else if (g_warn_from_auto_off &&
+                   elapsed >= auto_off_ms) {
+            do_shutdown();
+        } else if (!g_warn_from_auto_off &&
+                   (int32_t)(GetTick() - g_warn_start_tick) >=
+                   (int32_t)POWER_WARN_MS) {
             do_shutdown();
         }
         break;

@@ -499,6 +499,11 @@
               <FileType>1</FileType>
               <FilePath>..\APP\ui_thermal.c</FilePath>
             </File>
+            <File>
+              <FileName>config_store.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\APP\config_store.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -543,6 +548,11 @@
               <FileName>mpu6050.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\HARDWARE\mpu6050.c</FilePath>
+            </File>
+            <File>
+              <FileName>eeprom_24c02.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\HARDWARE\eeprom_24c02.c</FilePath>
             </File>
           </Files>
         </Group>

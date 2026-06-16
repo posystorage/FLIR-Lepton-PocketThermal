@@ -15,6 +15,7 @@
 #include "mpu6050.h"
 #include "usb_composite.h"
 #include "storage.h"
+#include "config_store.h"
 #include "ui.h"
 #include "ff.h"
 #include "diskio.h"
@@ -88,11 +89,13 @@ int32_t main(void)
     SDCard_Init();
     LCD_Init();
     MPU6050_Init();
+    ConfigStore_Init();
     Lepton_HW_Prepare();
     USB_Composite_Init();
     Lepton_App_Init();
     Storage_Init();
     UI_Init();
+    ConfigStore_Apply();
 
     HW_DEBUG("boot ok\r\n");
 
@@ -113,6 +116,7 @@ int32_t main(void)
         Power_Service();
         SDCard_Service();
         Storage_Service();
+        ConfigStore_Service();
         UI_Service();
 #if ENABLE_FATFS_TEST
         FATFS_Test();
